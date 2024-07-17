@@ -6,6 +6,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { CommonModule, DatePipe, isPlatformBrowser } from '@angular/common';
 import moment from 'moment-timezone';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NavbarComponent } from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-weather',
@@ -14,14 +15,17 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
     ReactiveFormsModule,
     HttpClientModule,
     CommonModule,
-    NgbModule 
+    NgbModule,
+    NavbarComponent
   ],
   templateUrl: './weather.component.html',
   styleUrls: ['./weather.component.css'],
   providers: [WeatherService, DatePipe]
 })
+
 export class WeatherComponent implements OnInit {
   public weatherSearchForm!: FormGroup;
+  public favoriteLocationForm!: FormGroup;
   weatherData: any;
   errorMessage: string | null = null;
   currentDateTime: any;
@@ -34,6 +38,7 @@ export class WeatherComponent implements OnInit {
   highTemperature: number | null = null;
   hourlyForecast: any[] = [];
   isLoading: boolean = false; // Add loading state
+  notification: string = '';
 
   constructor(
     private formBuilder: FormBuilder,
@@ -51,6 +56,10 @@ export class WeatherComponent implements OnInit {
     if (isPlatformBrowser(this.platformId)) {
       this.getCurrentLocationWeather();
     }
+
+    this.favoriteLocationForm = this.formBuilder.group({
+      location: ['']
+    });
   }
 
   setCurrentDateTime() {
@@ -81,6 +90,7 @@ export class WeatherComponent implements OnInit {
       .subscribe(
         data => {
           this.weatherData = data;
+          this.sendWeatherDataToBackend(data);
           this.errorMessage = null;
           this.calculateLocalTime(data.timezone);
           this.setWeatherIcon(data.weather[0].icon);
@@ -92,62 +102,77 @@ export class WeatherComponent implements OnInit {
             .subscribe(
               forecast => {
                 this.forecastData = forecast;
-                this.hourlyForecast = this.getHourlyForecast(); // Prepare hourly forecast data
+                this.hourlyForecast = this.getHourlyForecast(); // hourly forecast data
                 this.isLoading = false; // Set loading state to false
               },
               error => {
                 this.forecastData = null;
                 this.hourlyForecast = [];
-                this.isLoading = false; // Set loading state to false
+                this.isLoading = false; 
               }
             );
         },
         error => {
           this.weatherData = null;
           this.errorMessage = error;
-          this.isLoading = false; // Set loading state to false
+          this.isLoading = false; 
         }
       );
   }
 
   sendToOpenWeatherMapAPI(formValues: any): void {
-    this.isLoading = true; // Set loading state to true
-    this.weatherService.getWeather(formValues.location)
-      .subscribe(
-        data => {
-          this.weatherData = data;
-          this.errorMessage = null;
-          this.calculateLocalTime(data.timezone);
-          this.setWeatherIcon(data.weather[0].icon);
-          this.lowTemperature = data.main.temp_min;
-          this.highTemperature = data.main.temp_max;
+  this.isLoading = true; // Set loading state to true
+  this.weatherService.getWeather(formValues.location)
+    .subscribe(
+      data => {
+        this.weatherData = data;
+        this.errorMessage = null;
+        this.calculateLocalTime(data.timezone);
+        this.setWeatherIcon(data.weather[0].icon);
+        this.lowTemperature = data.main.temp_min;
+        this.highTemperature = data.main.temp_max;
 
-          // Fetch forecast data
-          this.weatherService.getForecast(formValues.location)
-            .subscribe(
-              forecast => {
-                this.forecastData = forecast;
-                this.hourlyForecast = this.getHourlyForecast(); // Prepare hourly forecast data
-                this.isLoading = false; // Set loading state to false
-              },
-              error => {
-                this.forecastData = null;
-                this.hourlyForecast = [];
-                this.isLoading = false; // Set loading state to false
-              }
-            );
-        },
-        error => {
-          this.weatherData = null;
-          this.errorMessage = error;
-          this.isLoading = false; // Set loading state to false
-        }
-      );
+        // Send data to backend and history weather table
+        const weatherData = {
+          location: data.name,
+          temperature: data.main.temp,
+          description: data.weather[0].description,
+          local_time: this.localTime,
+          weather_icon: data.weather[0].icon,
+          low_temperature: data.main.temp_min,
+          high_temperature: data.main.temp_max,
+          recorded_at: new Date().toISOString()
+        };
+
+        this.weatherService.addBackendWeatherData(weatherData).subscribe();
+        this.weatherService.addHistory(weatherData).subscribe();
+
+        // Fetch forecast data
+        this.weatherService.getForecast(formValues.location)
+          .subscribe(
+            forecast => {
+              this.forecastData = forecast;
+              this.hourlyForecast = this.getHourlyForecast(); // Prepare hourly forecast data
+              this.isLoading = false; // Set loading state to false
+            },
+            error => {
+              this.forecastData = null;
+              this.hourlyForecast = [];
+              this.isLoading = false; // Set loading state to false
+            }
+          );
+      },
+      error => {
+        this.weatherData = null;
+        this.errorMessage = error;
+        this.isLoading = false; // Set loading state to false
+      }
+    );
   }
 
   calculateLocalTime(timezoneOffset: number) {
     if (timezoneOffset) {
-      const localTime = moment().utcOffset(timezoneOffset / 60).format('ddd DD MMM YYYY hh:mm A');
+      const localTime = moment().utcOffset(timezoneOffset / 60).format('ddd DD MMM YYYY h:mm A');
       this.localTime = localTime;
     }
   }
@@ -156,32 +181,24 @@ export class WeatherComponent implements OnInit {
     if (!this.forecastData || !this.forecastData.list) {
       return [];
     }
-
+  
     const hourlyForecast: any[] = [];
-    const now = moment();
-
-    for (let i = 0; i < 24; i++) {
-      const targetTime = now.clone().add(i, 'hours').startOf('hour');
-      const forecast = this.forecastData.list.find((item: any) => {
-        const forecastTime = moment.unix(item.dt);
-        return forecastTime.isSame(targetTime, 'hour');
-      });
-
-      if (forecast) {
+    const startHour = 0; // 12:00 AM
+    const endHour = 21; // 9:00 PM
+  
+    // OpenWeatherMap forecast data in 3-hour intervals
+    this.forecastData.list.forEach((item: any) => {
+      const forecastTime = moment.unix(item.dt);
+      const hour = forecastTime.hour();
+      if (hour >= startHour && hour <= endHour && (hour % 3 === 0)) {
         hourlyForecast.push({
-          time: targetTime.format('hh:mm A'),
-          iconUrl: `https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`,
-          temperature: forecast.main.temp
-        });
-      } else {
-        hourlyForecast.push({
-          time: targetTime.format('hh:mm A'),
-          iconUrl: '',
-          temperature: null
+          time: forecastTime.format('h:mm A'),
+          iconUrl: `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`,
+          temperature: item.main.temp
         });
       }
-    }
-
+    });
+  
     return hourlyForecast;
   }
 
@@ -208,7 +225,7 @@ export class WeatherComponent implements OnInit {
     return this.forecastData.list.filter((forecast: any) => {
       const isWithinDay = forecast.dt >= startOfDay && forecast.dt <= endOfDay;
       if (isWithinDay) {
-        // Set the icon URL for each forecast entry
+        // Icon URL for each forecast entry
         forecast.weather[0].iconUrl = `https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`;
       }
       return isWithinDay;
@@ -216,11 +233,11 @@ export class WeatherComponent implements OnInit {
   }
 
   toggleTemperatureUnit() {
-    this.isLoading = true; // Set loading state to true
+    this.isLoading = true; 
     setTimeout(() => {
       this.isCelsius = !this.isCelsius;
-      this.isLoading = false; // Set loading state to false after toggle
-    }, 500); // Simulate a delay (e.g., for fetching data)
+      this.isLoading = false;
+    }, 1000);
   }
 
   convertTemperature(temp: number): number {
@@ -231,5 +248,61 @@ export class WeatherComponent implements OnInit {
       return parseFloat(((temp * 9 / 5) + 32).toFixed(2));
     }
   }
+
+  // Method to send weather data to backend
+  sendWeatherDataToBackend(data: any) {
+    const weatherData = {
+      location: data.name,
+      temperature: data.main.temp,
+      description: data.weather[0].description,
+      weather_icon: data.weather[0].icon, 
+      low_temperature: data.main.temp_min,
+      high_temperature: data.main.temp_max,
+      timezone: data.timezone,
+      local_time: this.localTime || new Date().toISOString() 
+    };
+
+    this.weatherService.addBackendWeatherData(weatherData)
+      .subscribe(
+        response => {
+          console.log('Weather data stored successfully', response);
+        },
+        error => {
+          console.error('Error storing weather data', error);
+        }
+      );
+  }
   
+  fetchWeatherData(location: string) {
+    this.weatherService.getWeather(location)
+      .subscribe(
+        data => {
+          this.weatherData = data;
+          this.sendWeatherDataToBackend(data); // Send data to backend
+        },
+        error => {
+          this.errorMessage = error.message;
+          console.error('Error fetching weather data', error);
+        }
+      );
+  }
+
+  addFavorite() {
+    const location = this.weatherSearchForm.get('location')?.value;
+    if (location) {
+      this.weatherService.addFavorites(location).subscribe(
+        response => {
+          this.notification = 'Favorite location added successfully!';
+          setTimeout(() => {
+            this.notification = '';
+          }, 2000); // Clear notification after 2 seconds
+        },
+        (error) => {
+          console.error('Error saving favorite location:', error);
+          //this.showNotification('Failed to add favorite location. Please try again.');
+        }
+      );
+    }
+  } 
 }
+
