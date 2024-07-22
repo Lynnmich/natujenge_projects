@@ -1,0 +1,239 @@
+body {
+    background: linear-gradient(180deg, #04fafd 5%, #119dff 50%, #030423);
+    color: white;
+    height: 150vh;
+    font-family: Georgia, serif;
+  }
+  
+  .search-container {
+    position: relative;
+  }
+  
+  .search-container input {
+    padding-right: 2.5rem;
+  }
+  
+  .search-container .searchBtn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border: none;
+    background: none;
+    padding: 0.5rem 1rem;
+  }
+  
+  h3 {
+    color: white;
+    font-weight: bold;
+  }
+  
+  .weather-box {
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+    max-width: 320px;
+    margin-left: 10px;
+  }
+  
+  .weather-details {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  
+  .weather-icon {
+    width: 100px;
+    height: 100px;
+    margin-right: 20px;
+  }
+  
+  .temperature {
+    font-size: 2em;
+    font-weight: bold;
+  }
+  
+  .location-name {
+    margin-top: 10px;
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  
+  .box {
+    padding: 10px;
+    margin: 10px 0;
+    text-align: center;
+    background-color: #007bff;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+    margin-bottom: 15px;
+  }
+  
+  .box:hover {
+    background-color: #0056b3;
+  }
+  
+  .description-section {
+    margin-top: 10px;
+  }
+  
+  .description-line {
+    margin: 10px 0;
+    border: none;
+    border-top: 4px solid #ffffff;
+  }
+  
+  .weather-description {
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .error {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: bold;
+    color: red;
+  }
+  
+  .days-forecast {
+    margin-top: 30px;
+  }
+  
+  .days-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .day-card {
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 7px;
+    color: white;
+    width: 100%;
+    max-width: 200px;
+    height: 200px;
+  }
+  
+  .day-card .card-body {
+    padding: 15px;
+  }
+  
+  .card-title {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  
+  .card img {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+  
+  .card p {
+    font-size: 1rem;
+    margin: 0;
+  }
+  
+  .hourly-forecast {
+    margin-top: 30px;
+  }
+  
+  .hourly-forecast-container {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .hourly-box {
+    margin: 10px 10px;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 7px;
+    color: white;
+    width: 100%;
+    max-width: 250px;
+    text-align: center;
+  }
+  
+  .hourly-card .card-body {
+    padding: 15px;
+  }
+  
+  .card-title {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  
+  .card img {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+  
+  .card p {
+    font-size: 1rem;
+    margin: 0;
+  }
+  
+  .loading-indicator {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1.5em;
+    color: #ffffff;
+  }
+  
+  .loading-indicator .fa-spinner {
+    margin-right: 10px;
+  }
+  
+  .carousel-inner {
+    display: flex;
+  }
+  
+  .carousel-item {
+    flex: 0 0 100%;
+  }
+  
+  .toggle-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+  }
+  
+  .toggle-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .forecast-header {
+    text-align: center;
+  }
+  
+  .btn-primary-ml-2{
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+  }
+  

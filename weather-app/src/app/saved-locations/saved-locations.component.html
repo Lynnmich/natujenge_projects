@@ -1,0 +1,42 @@
+<div *ngIf="savedWeatherData.length > 0; else noData">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4" *ngFor="let weather of savedWeatherData">
+        <div class="weather-box my-4">
+          <div class="weather-details">
+            <img *ngIf="weather.iconUrl" [src]="weather.iconUrl" alt="Weather Icon" class="weather-icon">
+            <div class="temperature">{{ weather.temperature }}°{{ isCelsius ? 'C' : 'F' }}</div>
+          </div>
+          <h4 class="location-name">{{ weather.location }}</h4>
+          <p>{{ weather.local_time }}</p>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="box">
+                <p>Humidity {{ weather.humidity }}%</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="box">
+                <p>Wind Speed {{ weather.wind_speed }} m/s</p>
+              </div>
+            </div>
+          </div>
+          <div class="temp-range">
+            Low: {{ weather.low_temperature }}°{{ isCelsius ? 'C' : 'F' }} / High: {{ weather.high_temperature }}°{{ isCelsius ? 'C' : 'F' }}
+          </div>
+          <div class="description-section">
+            <hr class="description-line">
+            <p class="weather-description">{{ weather.description }}</p>
+          </div>
+          <button class="btn btn-danger btn-sm" (click)="deleteLocation(location)">
+            <i class="fa fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #noData>
+  <p>No saved locations found.</p>
+</ng-template>

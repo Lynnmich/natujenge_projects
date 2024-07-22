@@ -72,20 +72,43 @@ def add_weather():
 
 @app.route('/weather/all', methods=['GET'])
 def get_all_weather():
-    weather_data = Weather.query.all()
-    results = [
-        {
-            "location": weather.location,
-            "temperature": weather.temperature,
-            "description": weather.description,
-            "local_time": weather.local_time,
-            "weather_icon": weather.weather_icon,
-            "low_temperature": weather.low_temperature,
-            "high_temperature": weather.high_temperature
-        } for weather in weather_data]
+    try:
+        page = request.args.get('page', default=1, type=int)
+        per_page = request.args.get('per_page', default=10, type=int)
 
-    return jsonify(results)
+        app.logger.info(f"Requesting page {page} with {per_page} items per page")
 
+        weather_query = Weather.query.paginate(page=page, per_page=per_page, error_out=False)
+
+        weather_data = weather_query.items
+        total = weather_query.total
+
+        app.logger.info(f"Retrieved {len(weather_data)} items from the database")
+
+        results = [
+            {
+                "location": weather.location,
+                "temperature": weather.temperature,
+                "description": weather.description,
+                "local_time": weather.local_time,
+                "weather_icon": weather.weather_icon,
+                "low_temperature": weather.low_temperature,
+                "high_temperature": weather.high_temperature
+            } for weather in weather_data]
+
+        response = {
+            "searches": results,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": weather_query.pages
+        }
+
+        return jsonify(response)
+
+    except Exception as e:
+        app.logger.error(f"Error in get_all_weather: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 @app.route('/favorites', methods=['GET'])
 def get_favorites():
     favorites = FavoriteLocation.query.all()

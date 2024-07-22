@@ -278,7 +278,7 @@ export class WeatherComponent implements OnInit {
       .subscribe(
         data => {
           this.weatherData = data;
-          this.sendWeatherDataToBackend(data); // Send data to backend
+          this.sendWeatherDataToBackend(data);
         },
         error => {
           this.errorMessage = error.message;

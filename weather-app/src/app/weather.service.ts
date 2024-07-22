@@ -60,6 +60,9 @@ export class WeatherService {
   addHistory(weatherData: any): Observable<any> {
     return this.http.post(`${this.backendUrl}/history/add`, weatherData);
   }
+  getAllWeatherData(): Observable<any> {
+    return this.http.get<any>(`${this.backendUrl}/weather/all`);
+  }
   
   private handleError(error: any): Observable<never> {
     console.error('An error occurred', error);
