@@ -21,26 +21,18 @@ class Weather(db.Model):
     weather_icon = db.Column(db.String(50), nullable=False)  
     low_temperature = db.Column(db.Float, nullable=False)
     high_temperature = db.Column(db.Float, nullable=False)
+    humidity = db.Column(db.Float, nullable=True)  
+    wind_speed = db.Column(db.Float, nullable=True)
 
 class FavoriteLocation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     location = db.Column(db.String(50), nullable=False)
 
-class HistoricalWeather(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    location = db.Column(db.String(50), nullable=False)
-    temperature = db.Column(db.Float, nullable=False)
-    description = db.Column(db.String(50), nullable=False)
-    local_time = db.Column(db.String(50), nullable=False)  
-    weather_icon = db.Column(db.String(50), nullable=False)  
-    low_temperature = db.Column(db.Float, nullable=False)
-    high_temperature = db.Column(db.Float, nullable=False)
-    recorded_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
 with app.app_context():
     def create_tables():
         db.create_all()
 
+#Index page
 @app.route("/")
 def index():
     return "<h1>Hello, World!</h1>"
@@ -54,6 +46,7 @@ def before_request_func():
         response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE, PUT")
         return response
 
+#Route to save searched weather data to the dB
 @app.route('/weather/add', methods=['POST'])
 def add_weather():
     data = request.get_json()
@@ -64,12 +57,16 @@ def add_weather():
         local_time=data['local_time'],
         weather_icon=data['weather_icon'],
         low_temperature=data['low_temperature'],
-        high_temperature=data['high_temperature']
+        high_temperature=data['high_temperature'],
+        humidity=data['humidity'], 
+        wind_speed=data['wind_speed']
+        
     )
     db.session.add(new_weather)
     db.session.commit()
     return jsonify({'message': 'Weather data added successfully!'})
 
+#Route to retrieve all weather data saved on the dB
 @app.route('/weather/all', methods=['GET'])
 def get_all_weather():
     try:
@@ -87,13 +84,16 @@ def get_all_weather():
 
         results = [
             {
+                "id": weather.id,
                 "location": weather.location,
                 "temperature": weather.temperature,
                 "description": weather.description,
                 "local_time": weather.local_time,
                 "weather_icon": weather.weather_icon,
                 "low_temperature": weather.low_temperature,
-                "high_temperature": weather.high_temperature
+                "high_temperature": weather.high_temperature,
+                "humidity": weather.humidity,
+                "wind_speed": weather.wind_speed
             } for weather in weather_data]
 
         response = {
@@ -109,12 +109,15 @@ def get_all_weather():
     except Exception as e:
         app.logger.error(f"Error in get_all_weather: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
+#Route to fetch all favorite locations 
 @app.route('/favorites', methods=['GET'])
 def get_favorites():
     favorites = FavoriteLocation.query.all()
     favorite_list = [{'id': fav.id, 'location': fav.location} for fav in favorites]
     return jsonify(favorite_list)
 
+#Route to add favorite locations to dB
 @app.route('/favorites/add', methods=['POST'])
 def add_favorite():
     data = request.get_json()
@@ -123,6 +126,27 @@ def add_favorite():
     db.session.commit()
     return jsonify({'message': 'Favorite location added successfully!'})
 
+#Route to retrieve weather data by location trhough the favorites
+@app.route('/weather/<location>', methods=['GET'])
+def get_weather(location):
+    weather_data = Weather.query.filter_by(location=location).first()
+    if weather_data:
+        result = {
+            "location": weather_data.location,
+            "temperature": weather_data.temperature,
+            "description": weather_data.description,
+            "local_time": weather_data.local_time,
+            "weather_icon": weather_data.weather_icon,
+            "low_temperature": weather_data.low_temperature,
+            "high_temperature": weather_data.high_temperature,
+            "humidity": weather.humidity,
+            "wind_speed": weather.wind_speed
+        }
+        return jsonify(result)
+    else:
+        return jsonify({'message': 'Weather data not found'}), 404
+
+#Route  to delete favorite location by id
 @app.route('/favorites/delete/<int:id>', methods=['DELETE'])
 def delete_favorite(id):
     favorite = FavoriteLocation.query.get(id)
@@ -133,38 +157,16 @@ def delete_favorite(id):
     db.session.commit()
     return jsonify({'message': 'Favorite location deleted successfully'})
 
-@app.route('/history/<location>', methods=['GET'])
-def get_history(location):
-    history_data = HistoricalWeather.query.filter_by(location=location).all()
-    history_list = [{"location": weather.location,
-                     "temperature": weather.temperature,
-                     "description": weather.description,
-                     "weather_icon": weather.weather_icon,
-                     "low_temperature": weather.low_temperature,
-                     "high_temperature": weather.high_temperature,
-                     "recorded_at": weather.recorded_at
-                    } for hist in history_data]
-    return jsonify(history_list)
+# Route to delete weather data
+@app.route('/weather/delete/<int:id>', methods=['DELETE'])
+def delete_weather(id):
+    weather = Weather.query.get(id)
+    if weather is None:
+        return jsonify({'message': 'Weather data not found'}), 404
 
-@app.route('/history/add', methods=['POST'])
-def add_history():
-    data = request.get_json()
-    try:
-        new_history = HistoricalWeather(
-            location=data['location'], 
-            temperature=data['temperature'],
-            description=data['description'],
-            local_time=data['local_time'],
-            weather_icon=data['weather_icon'],
-            low_temperature=data['low_temperature'],
-            high_temperature=data['high_temperature']
-        )
-        db.session.add(new_history)
-        db.session.commit()
-        return jsonify({'message': 'Historical weather data added successfully!'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'message': 'Failed to add historical weather data', 'error': str(e)}), 500
+    db.session.delete(weather)
+    db.session.commit()
+    return jsonify({'message': 'Weather data deleted successfully'})
 
 
 if __name__ == '__main__':
