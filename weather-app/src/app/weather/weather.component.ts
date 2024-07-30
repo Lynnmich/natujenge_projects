@@ -7,6 +7,7 @@ import { CommonModule, DatePipe, isPlatformBrowser } from '@angular/common';
 import moment from 'moment-timezone';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-weather',
@@ -16,7 +17,8 @@ import { NavbarComponent } from '../navbar/navbar.component';
     HttpClientModule,
     CommonModule,
     NgbModule,
-    NavbarComponent
+    NavbarComponent,
+    ConfirmationDialogComponent
   ],
   templateUrl: './weather.component.html',
   styleUrls: ['./weather.component.css'],
@@ -39,6 +41,8 @@ export class WeatherComponent implements OnInit {
   hourlyForecast: any[] = [];
   isLoading: boolean = false; // Add loading state
   notification: string = '';
+  humidity: number | null = null;
+  windSpeed: number | null = null;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -131,9 +135,12 @@ export class WeatherComponent implements OnInit {
         this.setWeatherIcon(data.weather[0].icon);
         this.lowTemperature = data.main.temp_min;
         this.highTemperature = data.main.temp_max;
+        this.humidity = data.main.humidity;        
+        this.windSpeed = data.wind.speed;
 
         // Send data to backend and history weather table
         const weatherData = {
+          id: data.id,
           location: data.name,
           temperature: data.main.temp,
           description: data.weather[0].description,
@@ -141,7 +148,9 @@ export class WeatherComponent implements OnInit {
           weather_icon: data.weather[0].icon,
           low_temperature: data.main.temp_min,
           high_temperature: data.main.temp_max,
-          recorded_at: new Date().toISOString()
+          recorded_at: new Date().toISOString(),
+          humidity: data.main.humidity,          
+          wind_speed: data.wind.speed  
         };
 
         this.weatherService.addBackendWeatherData(weatherData).subscribe();
@@ -259,7 +268,9 @@ export class WeatherComponent implements OnInit {
       low_temperature: data.main.temp_min,
       high_temperature: data.main.temp_max,
       timezone: data.timezone,
-      local_time: this.localTime || new Date().toISOString() 
+      local_time: this.localTime || new Date().toISOString(),
+      humidity: data.main.humidity, 
+      wind_speed: data.wind.speed  
     };
 
     this.weatherService.addBackendWeatherData(weatherData)

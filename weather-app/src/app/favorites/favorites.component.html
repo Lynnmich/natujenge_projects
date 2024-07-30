@@ -24,11 +24,23 @@
     </div>
       <div class="hourly-box" *ngFor="let location of favorites">
           <div class="card-title">{{ location.location }}</div><br>
-          <button class="btn-delete" (click)="deleteFavorite(location.id)">Delete</button>
-      </div>
+          <button class="btn-view" (click)="viewWeather(location.location)">View Details</button><br><br>
+          <button class="btn-delete" (click)="onConfirmDelete(location.id)">Delete</button>
+    </div>
   </div>
   <div *ngIf="notification" class="notification">{{ notification }}</div>
   <div *ngIf="!loading && favorites.length === 0" class="no-favorites">
     <p>No favorite locations found.</p>
   </div>
 </div>
+
+<!--
+<app-confirmation-dialog
+  *ngIf="showConfirmationDialog"
+  [message]="'Are you sure you want to delete this favorite?'"
+  (confirmed)="onConfirmDelete($event)">
+</app-confirmation-dialog>
+-->
+
+
+

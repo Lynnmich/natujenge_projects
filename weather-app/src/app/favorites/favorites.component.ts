@@ -3,6 +3,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { AppComponent } from '../app.component';
 import { FavoritesService } from '../favorites.service';
+import { Router } from '@angular/router';
+import { WeatherService } from '../weather.service';
+
 
 @Component({
   selector: 'app-favorites',
@@ -13,14 +16,21 @@ import { FavoritesService } from '../favorites.service';
     HttpClientModule,
     CommonModule
   ],
-  providers: [FavoritesService]
+  providers: [FavoritesService, WeatherService]
 })
 export class FavoritesComponent implements OnInit {
   favorites: any[] = [];
   notification: string = '';
   loading = true;
+  showConfirmationDialog = false;
+  deleteFavoriteId: number | null = null;
 
-  constructor(private favoritesService: FavoritesService) {}
+  constructor(
+    private favoritesService: FavoritesService,
+    private router: Router,
+    private weatherService: WeatherService,
+    //private dialog: MatDialog 
+  ) {}
 
   ngOnInit(): void {
     this.loadFavorites();
@@ -44,7 +54,6 @@ export class FavoritesComponent implements OnInit {
     );
   }
 
-
   deleteFavorite(id: number): void {
     this.favoritesService.deleteFavorite(id).subscribe(
       () => {
@@ -60,5 +69,42 @@ export class FavoritesComponent implements OnInit {
       }
     );
   }
-}
+  
+  viewWeather(location: string) {
+    this.loading = true;
+    this.weatherService.getWeather(location).subscribe((data: any) => { // Explicitly define the type as 'any'
+      this.loading = false;
+      this.router.navigate(['/weather-details'], { state: { weatherData: data } });
+    });
+  }
+  
+  onConfirmDelete(confirmed: boolean) {
+    this.showConfirmationDialog = false;
+    if (confirmed && this.deleteFavoriteId !== null) {
+      this.deleteFavorite(this.deleteFavoriteId);
+    }
+  }
+} 
+
+  /*deleteFavorite(id: number): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent);
+  
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.favoritesService.deleteFavorite(id).subscribe(
+          () => {
+            this.notification = 'Favorite location deleted successfully!';
+            this.loadFavorites(); // Reload favorites after deletion
+            setTimeout(() => {
+              this.notification = ''; // Clear notification after 3 seconds
+            }, 3000);
+          },
+          error => {
+            console.error('Error deleting favorite location', error);
+            this.notification = 'Failed to delete favorite location';
+          }
+        );
+      }
+    });
+  }*/
 
