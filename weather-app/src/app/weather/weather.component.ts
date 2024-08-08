@@ -7,7 +7,6 @@ import { CommonModule, DatePipe, isPlatformBrowser } from '@angular/common';
 import moment from 'moment-timezone';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NavbarComponent } from '../navbar/navbar.component';
-import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-weather',
@@ -18,7 +17,6 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
     CommonModule,
     NgbModule,
     NavbarComponent,
-    ConfirmationDialogComponent
   ],
   templateUrl: './weather.component.html',
   styleUrls: ['./weather.component.css'],
@@ -306,14 +304,17 @@ export class WeatherComponent implements OnInit {
           this.notification = 'Favorite location added successfully!';
           setTimeout(() => {
             this.notification = '';
-          }, 2000); // Clear notification after 2 seconds
+          }, 2000);
         },
         (error) => {
           console.error('Error saving favorite location:', error);
-          //this.showNotification('Failed to add favorite location. Please try again.');
         }
       );
     }
   } 
+
+  //getWeatherForecast(location: string): Observable<any> {
+    //return this.http.get<any>(`${this.apiUrl}/forecast?location=${location}`);
+  //}
 }
 

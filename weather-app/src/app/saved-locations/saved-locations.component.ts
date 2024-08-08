@@ -8,6 +8,8 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { WeatherService } from '../weather.service';
 
+declare const bootstrap: any;
+
 @Component({
   selector: 'app-saved-locations',
   standalone: true,
@@ -28,14 +30,15 @@ export class SavedLocationsComponent implements OnInit {
   page: number = 1;
   perPage: number = 6;
   total: number = 0;
-  isCelsius: boolean = true; 
+  isCelsius: boolean = true;
   loading = false;
+  deleteWeatherId: number | null = null;
+  successMessage: string = '';
 
   constructor(private searchesService: SearchesService,
-    private http: HttpClient,
-    private router: Router,
-    private weatherService: WeatherService
-  ) {}
+              private http: HttpClient,
+              private router: Router,
+              private weatherService: WeatherService) {}
 
   ngOnInit(): void {
     this.getSavedWeatherData();
@@ -46,78 +49,82 @@ export class SavedLocationsComponent implements OnInit {
 
     this.searchesService.getAllWeatherData(this.page, this.perPage).subscribe(
       (response) => {
-        setTimeout(() => { // Simulate a delay
+        setTimeout(() => {
           this.savedWeatherData = response.searches;
           this.total = response.total;
           this.setLoadingState(false);
-        }, 3000); 
+        }, 3000);
       },
       (error) => {
         console.error('Error fetching weather data:', error);
         this.errorMessage = 'Failed to load weather data';
-        setTimeout(() => { // Simulate a delay
+        setTimeout(() => {
           this.setLoadingState(false);
-        }, 3000); 
+        }, 3000);
       }
     );
   }
 
-  deleteWeather(id: number) {
+  deleteWeather(id: number): void {
     this.setLoadingState(true);
     this.weatherService.deleteWeatherData(id).subscribe({
       next: (response) => {
         console.log('Delete successful', response);
-        // Remove the deleted item from the list
-        this.savedWeatherData = this.savedWeatherData.filter(weather => weather.id !== id);
-        setTimeout(() => { // Simulate a delay
+        this.getSavedWeatherData(); // Reload the data after deletion
+        setTimeout(() => {
           this.setLoadingState(false);
-        }, 1000); // 1000ms = 1 second delay
+        }, 1000);
       },
       error: (error) => {
         console.error('There was an error during deletion', error);
-        setTimeout(() => { // Simulate a delay
+        setTimeout(() => {
           this.setLoadingState(false);
-        }, 1000); // 1000ms = 1 second delay
+        }, 1000);
       }
     });
   }
 
   viewWeather(location: string): void {
     this.setLoadingState(true);
-    // Simulate loading delay
     setTimeout(() => {
       this.router.navigate(['/weather-details', location]);
       this.setLoadingState(false);
-    }, 3000); // 3-second delay
+    }, 3000);
+  }
+
+  firstPage(): void {
+    if (this.page > 1 && !this.loading) {
+      this.page = 1;
+      this.getSavedWeatherData();
+    }
   }
 
   previousPage(): void {
     if (this.page > 1 && !this.loading) {
-      this.setLoadingState(true);
-      setTimeout(() => {
-        this.page--;
-        this.getSavedWeatherData();
-      }, 3000); // 3-second delay
+      this.page--;
+      this.getSavedWeatherData();
     }
   }
 
   nextPage(): void {
     if (this.page * this.perPage < this.total && !this.loading) {
-      this.setLoadingState(true);
-      setTimeout(() => {
-        this.page++;
-        this.getSavedWeatherData();
-      }, 3000); // 3-second delay
+      this.page++;
+      this.getSavedWeatherData();
+    }
+  }
+
+  lastPage(): void {
+    const totalPages = this.getTotalPages();
+    if (this.page < totalPages && !this.loading) {
+      this.page = totalPages;
+      this.getSavedWeatherData();
     }
   }
 
   goToPage(pageNumber: number): void {
     if (pageNumber > 0 && pageNumber <= this.getTotalPages() && !this.loading) {
       this.page = pageNumber;
-      this.setLoadingState(true);
-      setTimeout(() => {
-        this.getSavedWeatherData();
-      }, 3000); // 3-second delay
+      this.getSavedWeatherData();
     }
   }
 
@@ -125,7 +132,28 @@ export class SavedLocationsComponent implements OnInit {
     return Math.ceil(this.total / this.perPage);
   }
 
+  abs(value: number): number {
+    return Math.abs(value);
+  }
+
   private setLoadingState(loading: boolean): void {
     this.loading = loading;
+  }
+
+  openDeleteModal(id: number): void {
+    this.deleteWeatherId = id;
+    const modal = new bootstrap.Modal(document.getElementById('deleteWeatherModal'));
+    modal.show();
+  }
+
+  confirmDeleteWeather(): void {
+    if (this.deleteWeatherId !== null) {
+      this.deleteWeather(this.deleteWeatherId);
+      this.deleteWeatherId = null;
+      this.successMessage = 'Details deleted successfully'; 
+      setTimeout(() => {
+        this.successMessage = ''; 
+      }, 3000);
+    }
   }
 }

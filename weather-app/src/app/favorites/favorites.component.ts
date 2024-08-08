@@ -6,6 +6,7 @@ import { FavoritesService } from '../favorites.service';
 import { Router } from '@angular/router';
 import { WeatherService } from '../weather.service';
 
+declare const bootstrap: any;
 
 @Component({
   selector: 'app-favorites',
@@ -24,6 +25,10 @@ export class FavoritesComponent implements OnInit {
   loading = true;
   showConfirmationDialog = false;
   deleteFavoriteId: number | null = null;
+  weatherData: any = null; 
+  localTime: string | null = null;
+  errorMessage: string | null = null;
+  isLoading: boolean = false;
 
   constructor(
     private favoritesService: FavoritesService,
@@ -54,13 +59,37 @@ export class FavoritesComponent implements OnInit {
     );
   }
 
+  viewWeather(location: string): void {
+    this.loading = true;
+    this.favoritesService.getWeatherDetails(location).subscribe(
+      (data: any) => {
+        this.loading = false;
+        this.weatherData = data;
+        this.localTime = this.formatLocalTime(data.city.timezone);
+        this.isLoading = false;
+        const modal = new bootstrap.Modal(document.getElementById('weatherDetailsModal'));
+        modal.show();
+      },
+      (error: any) => {
+        console.error('Error fetching weather details', error);
+        this.loading = false;
+      }
+    );
+  }  
+
+    private formatLocalTime(timezoneOffset: number): string {
+    const now = new Date();
+    const localTime = new Date(now.getTime() + timezoneOffset * 1000);
+    return localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
   deleteFavorite(id: number): void {
     this.favoritesService.deleteFavorite(id).subscribe(
       () => {
         this.notification = 'Favorite location deleted successfully!';
-        this.loadFavorites(); // Reload favorites after deletion
+        this.loadFavorites();
         setTimeout(() => {
-          this.notification = ''; // Clear notification after 3 seconds
+          this.notification = '';
         }, 3000);
       },
       error => {
@@ -70,41 +99,16 @@ export class FavoritesComponent implements OnInit {
     );
   }
   
-  viewWeather(location: string) {
-    this.loading = true;
-    this.weatherService.getWeather(location).subscribe((data: any) => { // Explicitly define the type as 'any'
-      this.loading = false;
-      this.router.navigate(['/weather-details'], { state: { weatherData: data } });
-    });
+  openDeleteModal(id: number): void {
+    this.deleteFavoriteId = id;
+    const modal = new bootstrap.Modal(document.getElementById('deleteFavoriteModal'));
+    modal.show();
   }
-  
-  onConfirmDelete(confirmed: boolean) {
-    this.showConfirmationDialog = false;
-    if (confirmed && this.deleteFavoriteId !== null) {
+
+  confirmDeleteFavorite(): void {
+    if (this.deleteFavoriteId !== null) {
       this.deleteFavorite(this.deleteFavoriteId);
+      this.deleteFavoriteId = null;
     }
-  }
-} 
-
-  /*deleteFavorite(id: number): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent);
-  
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.favoritesService.deleteFavorite(id).subscribe(
-          () => {
-            this.notification = 'Favorite location deleted successfully!';
-            this.loadFavorites(); // Reload favorites after deletion
-            setTimeout(() => {
-              this.notification = ''; // Clear notification after 3 seconds
-            }, 3000);
-          },
-          error => {
-            console.error('Error deleting favorite location', error);
-            this.notification = 'Failed to delete favorite location';
-          }
-        );
-      }
-    });
-  }*/
-
+  } 
+}

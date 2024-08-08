@@ -104,4 +104,10 @@ export class WeatherService {
     console.error('An error occurred', error);
     return throwError('Something went wrong; please try again later.');
   }
+
+  getWeeklyWeather(location: string): Observable<any> {
+    return this.http.get<any>(`${this.weatherUrl}/forecast/daily?q=${location}&cnt=7&appid=${environment.apiKey}`);
+  }
+
 }
+
